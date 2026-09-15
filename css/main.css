@@ -61,16 +61,85 @@ header {
     radial-gradient(1200px 240px at 12% -20%, rgba(26, 122, 140, 0.35), transparent 60%),
     linear-gradient(180deg, var(--navy-deep), var(--navy));
   color: #fff;
-  padding: 1.35rem 1.5rem 2.6rem;
+  padding: 1.35rem 0 2.6rem;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 92rem;
+  margin: 0 auto;
+  padding: 0 1.2rem;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 0.95rem;
-  max-width: 92rem;
-  margin: 0 auto;
+  min-width: 0;
 }
+
+.crawl-date {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  margin: 0;
+  text-align: right;
+  line-height: 1.25;
+  cursor: help;
+}
+
+.crawl-date[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  background: #072a38;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.crawl-date[data-tip]:hover::after,
+.crawl-date[data-tip]:focus-within::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.crawl-date-label {
+  display: block;
+  color: #c5e0e6;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crawl-date time {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.crawl-date-fresh time { color: #7ee0a8; }
+.crawl-date-fresh .crawl-date-label { color: #9fd4b4; }
+.crawl-date-aging time { color: #f0b35a; }
+.crawl-date-aging .crawl-date-label { color: #e0c08a; }
+.crawl-date-stale time { color: #f07a72; }
+.crawl-date-stale .crawl-date-label { color: #e0a09a; }
 
 .logo {
   width: 64px;
@@ -101,6 +170,7 @@ header::after {
   right: 0;
   bottom: -1px;
   height: 40px;
+  pointer-events: none;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 48' preserveAspectRatio='none'%3E%3Cpath fill='%23e8f4f6' d='M0 28c180-24 360 16 540 8 180-8 360-40 540-24 120 10 240 28 360 8v28H0z'/%3E%3C/svg%3E") no-repeat bottom;
   background-size: 100% 40px;
 }
@@ -532,8 +602,16 @@ footer {
 @media (max-width: 720px) {
   .filter-wide,
   .filter-slider { grid-column: span 1; }
+  header { padding-bottom: 3.4rem; }
+  .header-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
   .brand-text h1 { font-size: 1.45rem; }
   .logo { width: 52px; height: 52px; }
+  .crawl-date { align-self: flex-end; }
+  .crawl-date time { font-size: 0.95rem; }
   thead { display: none; }
   table, tbody, tr, td { display: block; width: 100%; }
   tbody tr {
@@ -566,7 +644,14 @@ footer {
   }
   header::after,
   .filters,
-  .skip { display: none; }
+  .skip,
+  .crawl-date::after { display: none; }
+  .crawl-date-fresh time,
+  .crawl-date-fresh .crawl-date-label { color: #157a45; }
+  .crawl-date-aging time,
+  .crawl-date-aging .crawl-date-label { color: #9a5b10; }
+  .crawl-date-stale time,
+  .crawl-date-stale .crawl-date-label { color: #b42318; }
   .rate-card { break-inside: avoid; cursor: default; }
   a { color: inherit; text-decoration: none; }
 }

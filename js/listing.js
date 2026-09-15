@@ -8,6 +8,35 @@ const TIER_LABELS = {
 const TIER_ORDER = ["ECONOMY", "ALL_INCLUDED", "ULTRA"];
 const SYMBOLS = { EUR: "€", USD: "$", GBP: "£" };
 
+function track(name, params) {
+  if (typeof gtag !== "function") return;
+  gtag("event", name, params || {});
+}
+
+function trackFilter(name, value) {
+  track("filter_change", {
+    filter_name: name,
+    value: value == null ? "" : String(value),
+  });
+}
+
+function trackSort() {
+  track("sort_change", {
+    sort_key: state.sortKey,
+    sort_dir: state.sortDir,
+  });
+}
+
+function trackOffer(href, row) {
+  track("select_content", {
+    content_type: "sailing",
+    link_url: href,
+    cruise_line: (row && row.cruiseline) || "",
+    source: (row && row.source) || "",
+    item_name: (row && row.title) || "",
+  });
+}
+
 const state = {
   title: "",
   source: "",
@@ -153,7 +182,7 @@ const dateBounds = dates.length
 
 const sliderResets = [];
 
-function setupDualSlider(rootId, minId, maxId, range, step, format, apply) {
+function setupDualSlider(rootId, minId, maxId, range, step, format, apply, filterName) {
   const root = document.getElementById(rootId);
   const minEl = document.getElementById(minId);
   const maxEl = document.getElementById(maxId);
@@ -221,6 +250,14 @@ function setupDualSlider(rootId, minId, maxId, range, step, format, apply) {
     maxEl.style.zIndex = 3;
     minEl.style.zIndex = 2;
   });
+  if (filterName) {
+    const commit = () => {
+      const { lo, hi } = current();
+      trackFilter(filterName, format(lo) + " – " + format(hi));
+    };
+    minEl.addEventListener("change", commit);
+    maxEl.addEventListener("change", commit);
+  }
 
   function reset() {
     minEl.value = range.min;
@@ -243,6 +280,7 @@ setupDualSlider(
     state.nightsMin = lo;
     state.nightsMax = hi;
   },
+  "nights",
 );
 setupDualSlider(
   "slider-price",
@@ -255,6 +293,7 @@ setupDualSlider(
     state.priceMin = lo;
     state.priceMax = hi;
   },
+  "price",
 );
 setupDualSlider(
   "slider-ppd",
@@ -267,6 +306,7 @@ setupDualSlider(
     state.ppdMin = lo;
     state.ppdMax = hi;
   },
+  "per_night",
 );
 setupDualSlider(
   "slider-date",
@@ -279,6 +319,7 @@ setupDualSlider(
     state.dateFrom = dayToIso(lo);
     state.dateTo = dayToIso(hi);
   },
+  "departs",
 );
 
 function matches(row) {
@@ -398,7 +439,10 @@ function render() {
     const tierClass = "tier-" + String(row.comment || "").toLowerCase();
     const tierLabel = TIER_LABELS[row.comment] || row.comment || "";
     const linkCell = href
-      ? '<a class="offer" href="' + escapeHtml(href) + '" target="_blank" rel="noopener">Open</a>'
+      ? '<a class="offer" href="' + escapeHtml(href) + '" target="_blank" rel="noopener"' +
+        ' data-line="' + escapeHtml(row.cruiseline) + '"' +
+        ' data-source="' + escapeHtml(row.source) + '"' +
+        ' data-title="' + escapeHtml(row.title) + '">Open</a>'
       : "";
     return (
       "<tr>" +
@@ -432,38 +476,44 @@ function render() {
     "</tr></thead><tbody>" + body + "</tbody></table>";
 }
 
-function bindText(id, setter) {
+function bindText(id, setter, filterName) {
   const el = document.getElementById(id);
   if (!el) return;
+  let timer = null;
   el.addEventListener("input", () => {
     setter(el.value);
     render();
+    if (!filterName) return;
+    clearTimeout(timer);
+    timer = setTimeout(() => trackFilter(filterName, el.value.trim()), 500);
   });
 }
 
-function bindSelect(id, setter) {
+function bindSelect(id, setter, filterName) {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener("change", () => {
     setter(el.value);
     render();
+    if (filterName) trackFilter(filterName, el.value);
   });
 }
 
 bindText("filter-title", (value) => {
   state.title = value.trim().toLowerCase();
-});
-bindSelect("filter-line", (value) => { state.cruiseline = value; });
-bindSelect("filter-source", (value) => { state.source = value; });
-bindSelect("filter-ship", (value) => { state.ship = value; });
-bindSelect("filter-currency", (value) => { state.currency = value; });
-bindSelect("filter-comment", (value) => { state.comment = value; });
+}, "title");
+bindSelect("filter-line", (value) => { state.cruiseline = value; }, "line");
+bindSelect("filter-source", (value) => { state.source = value; }, "source");
+bindSelect("filter-ship", (value) => { state.ship = value; }, "ship");
+bindSelect("filter-currency", (value) => { state.currency = value; }, "currency");
+bindSelect("filter-comment", (value) => { state.comment = value; }, "rate");
 
 const sortKey = document.getElementById("sort-key");
 if (sortKey) {
   sortKey.addEventListener("change", () => {
     state.sortKey = sortKey.value;
     render();
+    trackSort();
   });
 }
 const sortDir = document.getElementById("sort-dir");
@@ -471,6 +521,7 @@ if (sortDir) {
   sortDir.addEventListener("click", () => {
     state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
     render();
+    trackSort();
   });
 }
 
@@ -491,6 +542,7 @@ if (clear) {
     });
     sliderResets.forEach((reset) => reset());
     render();
+    track("clear_filters");
   });
 }
 
@@ -500,6 +552,7 @@ document.querySelectorAll(".rate-card").forEach((card) => {
     const select = document.getElementById("filter-comment");
     if (select) select.value = state.comment;
     render();
+    trackFilter("rate", state.comment);
   };
   card.addEventListener("click", apply);
   card.addEventListener("keydown", (event) => {
@@ -513,6 +566,15 @@ document.querySelectorAll(".rate-card").forEach((card) => {
 const tableWrap = document.getElementById("table-wrap");
 if (tableWrap) {
   tableWrap.addEventListener("click", (event) => {
+    const offer = event.target.closest("a.offer");
+    if (offer) {
+      trackOffer(offer.href, {
+        cruiseline: offer.dataset.line,
+        source: offer.dataset.source,
+        title: offer.dataset.title,
+      });
+      return;
+    }
     const button = event.target.closest("[data-sort]");
     if (!button) return;
     const key = button.getAttribute("data-sort");
@@ -523,7 +585,34 @@ if (tableWrap) {
       state.sortDir = "asc";
     }
     render();
+    trackSort();
   });
 }
 
+function markCrawlDateFreshness() {
+  const root = document.querySelector(".crawl-date");
+  const time = root && root.querySelector("time");
+  if (!root || !time) return;
+  const iso = time.getAttribute("datetime") || data.crawled_at || "";
+  const parts = String(iso).split("-").map(Number);
+  const titles = {
+    fresh: "Up to date",
+    aging: "Probably relevant",
+    stale: "Probably outdated",
+  };
+  let kind = "stale";
+  if (parts.length === 3 && !parts.some((n) => Number.isNaN(n))) {
+    const crawled = new Date(parts[0], parts[1] - 1, parts[2]);
+    const today = new Date();
+    crawled.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const days = Math.round((today - crawled) / 86400000);
+    kind = days <= 3 ? "fresh" : days <= 10 ? "aging" : "stale";
+  }
+  root.classList.add("crawl-date-" + kind);
+  root.dataset.tip = titles[kind];
+  root.setAttribute("aria-label", "Last update: " + titles[kind]);
+}
+
+markCrawlDateFreshness();
 render();
