@@ -19,92 +19,45 @@
   <a class="skip" href="#listing">Skip to sailings</a>
   <header>
     <div class="header-bar">
-      <div class="brand">
+      <a class="brand" href="./index.html">
         <img class="logo" src="./img/logo.png" width="64" height="64" alt="">
         <div class="brand-text">
           <h1>LuxuryForLess.cruise</h1>
           <p>Affordable premium and ultra fares</p>
         </div>
-      </div>
+      </a>
       <p class="crawl-date">
         <span class="crawl-date-label">Last update</span>
-        <time datetime="2026-09-15">15 Sep 2026</time>
+        <time datetime="2026-09-17">17 Sep 2026</time>
       </p>
     </div>
   </header>
   <main>
-    <section class="panel overview" id="overview">
-      <h2>Overview</h2>
-<p>This page is a snapshot of <strong>affordable premium and ultra cruise fares</strong> collected from Bulgarian travel agencies and from the cruise lines’ own sites. It is not a booking engine: each row links out to the page that published that fare.</p>
-<p>Interior cabins and ordinary ocean-view staterooms are already excluded. What remains is a balcony cabin or better, an all-inclusive bundle on that same standard, or a luxury / ship-within-a-ship product.</p>
-<p>A departure can appear more than once. The same sailing is listed once per website that sells it, and once per rate tier it still qualifies under. Use <strong>Source</strong> to tell an agency quote from the line’s own site, and <strong>Rate</strong> (or the cards below) to pick a fare type.</p>
-<p>Prices stay in the currency that website published. Nothing is converted, so a dollar figure is not comparable to a euro one until you filter by <strong>Currency</strong>. Per night is the fare divided by the nights the sailing spans — not the marketed day count.</p>
-    </section>
-
-    <section class="panel rate-guide" id="rates" aria-labelledby="rate-guide-title">
-      <h2 id="rate-guide-title">What the rates mean</h2>
-<p>Each row is one qualifying fare for one departure. Click a card to show only that tier.</p>
-<div class="rate-cards">
-<article class="rate-card rate-card-economy" data-tier="ECONOMY" role="button" tabindex="0" aria-pressed="false">
-  <h3>Economy</h3>
-  <p class="rate-summary">Cabin and meals; extras on board</p>
-  <div class="rate-body"><p>The cruise fare for a balcony cabin or better, without a drinks or Wi-Fi package. Main dining is included; gratuities, drinks, and excursions are usually paid separately. Celebrity’s own search only publishes this kind of lead-in price, so its rows are always Economy. A sailing is listed here when that fare is under 175 EUR / 200 USD per night.</p></div>
-</article>
-<article class="rate-card rate-card-all_included" data-tier="ALL_INCLUDED" role="button" tabindex="0" aria-pressed="false">
-  <h3>All included</h3>
-  <p class="rate-summary">Drinks and Wi-Fi bundled in</p>
-  <div class="rate-body"><p>A fare the agency marks as all-inclusive — typically a drinks package and Wi-Fi on top of the same cabin standard. Contitrans uses ALLINC/N1K tariff codes; Crusit spells the fare out as All Inclusive. Holland America’s bundled fares land here too. Listed when the bundle is under 300 EUR / 345 USD per night.</p></div>
-</article>
-<article class="rate-card rate-card-ultra" data-tier="ULTRA" role="button" tabindex="0" aria-pressed="false">
-  <h3>Ultra</h3>
-  <p class="rate-summary">Luxury all-inclusive, or a ship-within-a-ship</p>
-  <div class="rate-body"><p>The whole ship on Seabourn, Silversea, Regent, or Viking; or a premium enclave such as Celebrity The Retreat, NCL The Haven, or MSC Yacht Club. MSC and NCL only appear in this tier — their cheaper cabins are ignored. Listed under 350 EUR / 405 USD per night.</p></div>
-</article>
-</div>
-<ul class="footnotes">
-<li>Prices are per person, in the currency that website published. Nothing is converted, so a dollar figure is not comparable to a euro one until you filter by currency.</li>
-<li>Per night is the fare divided by the nights the sailing spans (not the marketed day count).</li>
-<li>Interior cabins are never listed. An ordinary ocean-view stateroom is dropped too, but an ocean-view suite on an all-suite line is kept.</li>
-</ul>
-    </section>
-
-    <section class="listing" id="listing">
+    <p class="slogan">Luxury cabins at reasonable prices!</p>
+    <div class="workspace">
+      <section class="listing" id="listing">
       <h2>Sailings</h2>
       <div class="filters" id="filters">
         <label class="filter filter-wide">
           <span>Title</span>
           <input id="filter-title" type="search" placeholder="Contains…" autocomplete="off">
         </label>
-        <label class="filter">
-          <span>Line</span>
-          <select id="filter-line">
-            <option value="">All lines</option>
-          </select>
-        </label>
-        <label class="filter">
-          <span>Source</span>
-          <select id="filter-source">
-            <option value="">All sources</option>
-          </select>
-        </label>
-        <label class="filter">
-          <span>Ship</span>
-          <select id="filter-ship">
-            <option value="">All ships</option>
-          </select>
-        </label>
-        <label class="filter">
-          <span>Currency</span>
-          <select id="filter-currency">
-            <option value="">All currencies</option>
-          </select>
-        </label>
-        <label class="filter">
-          <span>Rate</span>
-          <select id="filter-comment">
-            <option value="">All rates</option>
-          </select>
-        </label>
+        <div class="filter">
+          <span id="filter-line-label">Line</span>
+          <div id="filter-line" class="multi-select" data-empty-label="All lines"></div>
+        </div>
+        <div class="filter">
+          <span id="filter-source-label">Source</span>
+          <div id="filter-source" class="multi-select" data-empty-label="All sources"></div>
+        </div>
+        <div class="filter">
+          <span id="filter-ship-label">Ship</span>
+          <div id="filter-ship" class="multi-select" data-empty-label="All ships"></div>
+        </div>
+        <div class="filter">
+          <span id="filter-comment-label">Rate</span>
+          <div id="filter-comment" class="multi-select" data-empty-label="All rates"></div>
+        </div>
         <div class="filter filter-slider">
           <div class="filter-heading">
             <span>Nights</span>
@@ -173,24 +126,6 @@
             </div>
           </div>
         </div>
-        <label class="filter">
-          <span>Sort by</span>
-          <div class="sort-controls">
-            <select id="sort-key" aria-label="Sort column">
-              <option value="price_per_day">Per night</option>
-              <option value="lowest_price">Price</option>
-              <option value="date">Departs</option>
-              <option value="number_of_days">Nights</option>
-              <option value="title">Title</option>
-              <option value="cruiseline">Line</option>
-              <option value="source_label">Source</option>
-              <option value="ship">Ship</option>
-              <option value="currency">Currency</option>
-              <option value="comment">Rate</option>
-            </select>
-            <button type="button" id="sort-dir" title="Ascending">↑</button>
-          </div>
-        </label>
         <div class="filter filter-actions">
           <span class="filter-actions-label">Results</span>
           <div class="toolbar-actions">
@@ -200,9 +135,42 @@
         </div>
       </div>
       <div class="table-wrap" id="table-wrap"></div>
-    </section>
+      </section>
+      <aside class="panel rate-guide" id="rates" aria-labelledby="rate-guide-title">
+        <h2 id="rate-guide-title">What the rates mean</h2>
+<p>Each row is one qualifying fare for one departure. Click a card to include that tier; click again to remove it. Several cards can be active at once.</p>
+<div class="rate-cards">
+<article class="rate-card rate-card-economy" data-tier="ECONOMY" role="button" tabindex="0" aria-pressed="false">
+  <h3>Economy</h3>
+  <p class="rate-summary">Cabin and meals; extras on board</p>
+  <div class="rate-body"><p>The cruise fare for a balcony cabin or better, without a drinks or Wi-Fi package. Main dining is included; gratuities, drinks, and excursions are usually paid separately. Celebrity’s own search only publishes this kind of lead-in price, so its rows are always Economy. A sailing is listed here when that fare is under 175 EUR / 200 USD per night.</p></div>
+</article>
+<article class="rate-card rate-card-all_included" data-tier="ALL_INCLUDED" role="button" tabindex="0" aria-pressed="false">
+  <h3>All included</h3>
+  <p class="rate-summary">Drinks and Wi-Fi bundled in</p>
+  <div class="rate-body"><p>A fare the agency marks as all-inclusive — typically a drinks package and Wi-Fi on top of the same cabin standard. Contitrans uses ALLINC/N1K tariff codes; Crusit spells the fare out as All Inclusive. Holland America’s bundled fares land here too. Listed when the bundle is under 300 EUR / 345 USD per night.</p></div>
+</article>
+<article class="rate-card rate-card-ultra" data-tier="ULTRA" role="button" tabindex="0" aria-pressed="false">
+  <h3>Ultra</h3>
+  <p class="rate-summary">Luxury all-inclusive, or a ship-within-a-ship</p>
+  <div class="rate-body"><p>The whole ship on Seabourn, Silversea, Regent, or Viking; or a premium enclave such as Celebrity The Retreat, NCL The Haven, or MSC Yacht Club. MSC and NCL only appear in this tier — their cheaper cabins are ignored. Listed under 350 EUR / 405 USD per night.</p></div>
+</article>
+</div>
+<ul class="footnotes">
+<li>Prices are per person, in the currency that website published. Nothing is converted, so a dollar figure is not comparable to a euro one.</li>
+<li>Per night is the fare divided by the nights the sailing spans (not the marketed day count).</li>
+<li>Interior cabins are never listed. An ordinary ocean-view stateroom is dropped too, but an ocean-view suite on an all-suite line is kept.</li>
+</ul>
+      </aside>
+    </div>
 
-    <footer>Built 2026-09-15 from all-20260915.csv. Open this folder in a browser; nothing is fetched from a server.</footer>
+    <footer>
+      <nav class="footer-nav" aria-label="Site">
+        <a href="./index.html" aria-current="page">Sailings</a>
+        <a href="./about.html">About us</a>
+      </nav>
+      <p>Built 2026-09-17 from all-20260917.csv. Open this folder in a browser; nothing is fetched from a server.</p>
+    </footer>
   </main>
   <script src="./js/data.js"></script>
   <script src="./js/listing.js"></script>
