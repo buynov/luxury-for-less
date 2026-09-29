@@ -1,5 +1,6 @@
-// Pages runs this file from the built site. A functions/ directory in that
-// same site is uploaded as ordinary files and does not execute.
+// Worker entry (`main` in wrangler.jsonc). `assets.run_worker_first` lists the
+// paths below; without that, Cloudflare serves index.html for `/` and this
+// file never runs. `.assetsignore` keeps it out of the public upload.
 //
 // Visitors from Bulgaria who open the root pages are sent to /bg/.
 // /bg with no trailing slash is sent to /bg/ for every country, so relative
