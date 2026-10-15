@@ -1,0 +1,4 @@
+/.well-known/ai-catalog.json
+  Content-Type: application/ai-catalog+json
+  Cache-Control: public, max-age=3600
+  Access-Control-Allow-Origin: *

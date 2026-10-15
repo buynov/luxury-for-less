@@ -1,0 +1,10 @@
+{
+  "specVersion": "1.0",
+  "entries": [
+    {
+      "identifier": "urn:air:luxuryforless.cruises:mcp:premium-cruise-fares",
+      "type": "application/mcp-server-card+json",
+      "url": "https://luxuryforless.cruises/mcp/server-card"
+    }
+  ]
+}
