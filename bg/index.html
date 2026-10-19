@@ -28,7 +28,7 @@
       </a>
       <p class="crawl-date">
         <span class="crawl-date-label">Last update</span>
-        <time datetime="2026-10-17">17 Oct 2026</time>
+        <time datetime="2026-10-19">19 Oct 2026</time>
       </p>
     </div>
   </header>
@@ -36,6 +36,13 @@
     <div class="workspace">
       <section class="listing" id="listing">
       <h2>Sailings</h2>
+      <div class="controls">
+        <div class="tablist" role="tablist" aria-label="Sailings">
+          <button type="button" class="tab" id="tab-filters" role="tab" aria-selected="true" aria-controls="panel-filters">Filters</button>
+          <button type="button" class="tab" id="tab-rates" role="tab" aria-selected="false" aria-controls="panel-rates" tabindex="-1">Fare types</button>
+          <button type="button" class="tab" id="tab-mcp" role="tab" aria-selected="false" aria-controls="panel-mcp" tabindex="-1">MCP</button>
+        </div>
+        <div class="tab-panel" id="panel-filters" role="tabpanel" aria-labelledby="tab-filters">
       <div class="filters" id="filters">
         <label class="filter filter-wide">
           <span>Title</span>
@@ -133,10 +140,10 @@
           </div>
         </div>
       </div>
-      <div class="table-wrap" id="table-wrap"></div>
-      </section>
-      <aside class="panel rate-guide" id="rates" aria-labelledby="rate-guide-title">
-        <h2 id="rate-guide-title">What the rates mean</h2>
+        </div>
+        <div class="tab-panel" id="panel-rates" role="tabpanel" aria-labelledby="tab-rates" hidden>
+          <div class="rate-guide" id="rates">
+            <h2 id="rate-guide-title">What the rates mean</h2>
 <p>Each row is one qualifying fare for one departure. Click a card to include that tier; click again to remove it. Several cards can be active at once.</p>
 <div class="rate-cards">
 <article class="rate-card rate-card-economy" data-tier="ECONOMY" role="button" tabindex="0" aria-pressed="false">
@@ -155,20 +162,44 @@
   <div class="rate-body"><p>The whole ship on Seabourn, Silversea, Regent, or Viking; or a premium enclave such as Celebrity The Retreat, NCL The Haven, or MSC Yacht Club. MSC and NCL only appear in this tier — their cheaper cabins are ignored. Listed under 350 EUR / 405 USD per night.</p></div>
 </article>
 </div>
-<ul class="footnotes">
-<li>Prices are per person, in the currency that website published. Nothing is converted, so a dollar figure is not comparable to a euro one.</li>
+          </div>
+        </div>
+        <div class="tab-panel" id="panel-mcp" role="tabpanel" aria-labelledby="tab-mcp" hidden>
+          <div class="mcp-guide" id="mcp">
+            <h2>Use a chat app</h2>
+<p>A chat app can look up these sailings for you. When it asks for an address, paste this one:</p>
+<p><a href="https://luxuryforless.cruises/mcp">https://luxuryforless.cruises/mcp</a></p>
+<p>You do not need an account on this site. If the app asks you to sign in, choose no sign-in.</p>
+<p>Each company explains the clicks in its own app. Some only offer this on certain plans, or in certain countries.</p>
+<ul>
+<li><a href="https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt">How to add it in ChatGPT</a></li>
+<li><a href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp">How to add it in Claude</a></li>
+<li><a href="https://support.google.com/gemini/answer/17209137?hl=en">How to add it in Gemini</a></li>
+<li><a href="https://docs.x.ai/grok/connectors">How to add it in Grok</a></li>
+<li><a href="https://www.perplexity.ai/help-center/en/articles/11502712-local-and-remote-mcps-for-perplexity">How to add it in Perplexity</a></li>
+</ul>
+          </div>
+        </div>
+      </div>
+      <div class="table-wrap" id="table-wrap"></div>
+      </section>
+    </div>
+
+    <section class="rate-notes" id="rate-notes">
+      <h2>Notes</h2>
+      <ul class="footnotes">
+<li>Prices are per person, in the currency that website published. A euro quote and a dollar quote of the same sailing share one row. The row is the cheaper one after the European Central Bank dollar rate for the crawl date. The amounts themselves are not converted. When that rate is unavailable, the two quotes stay on separate rows.</li>
 <li>Per night is the fare divided by the nights the sailing spans (not the marketed day count).</li>
 <li>Interior cabins are never listed. An ordinary ocean-view stateroom is dropped too, but an ocean-view suite on an all-suite line is kept.</li>
 </ul>
-      </aside>
-    </div>
+    </section>
 
     <footer>
       <nav class="footer-nav" aria-label="Site">
         <a href="./index.html" aria-current="page">Sailings</a>
         <a href="./about.html">About us</a>
       </nav>
-      <p>Built 2026-10-17 from all-20261017.csv. Open this folder in a browser; nothing is fetched from a server.</p>
+      <p>Built 2026-10-19 from all-20261019.csv. Open this folder in a browser; nothing is fetched from a server.</p>
     </footer>
   </main>
   <script src="./js/data.js"></script>

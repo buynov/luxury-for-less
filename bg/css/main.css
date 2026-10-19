@@ -202,11 +202,61 @@ h2 {
 }
 
 .workspace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 22rem);
-  gap: 1.15rem;
-  align-items: start;
+  display: block;
 }
+
+.controls {
+  position: relative;
+  z-index: 3;
+  margin: 0 0 0.9rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.tablist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.4rem 0.55rem 0;
+  background: var(--sand);
+  border-bottom: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+
+.tab {
+  appearance: none;
+  margin: 0;
+  padding: 0.5rem 0.95rem 0.55rem;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tab:hover { color: var(--navy); }
+
+.tab:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: -2px;
+}
+
+.tab[aria-selected="true"] {
+  background: var(--panel);
+  color: var(--navy);
+  border-color: var(--line);
+  margin-bottom: -1px;
+  padding-bottom: calc(0.55rem + 1px);
+}
+
+.tab-panel { padding: 0.95rem 1rem 1rem; }
+
+.tab-panel[hidden] { display: none; }
 
 .about p,
 .rate-guide > p,
@@ -232,9 +282,9 @@ h2 {
 
 .rate-cards {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
-  margin-top: 0.7rem;
+  margin-top: 0.85rem;
 }
 
 .rate-card {
@@ -295,24 +345,129 @@ h2 {
 
 .listing { min-width: 0; }
 
-.rate-guide {
-  margin-bottom: 0;
-  position: sticky;
-  top: 0.75rem;
+.rate-guide { margin: 0; }
+
+.rate-guide h2,
+.mcp-guide h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.4rem;
+}
+
+.mcp-guide {
+  max-width: 46rem;
+}
+
+.mcp-guide h3 {
+  margin: 1.05rem 0 0.35rem;
+  font-family: var(--display);
+  font-size: 1.05rem;
+  color: var(--navy);
+}
+
+.mcp-guide p,
+.mcp-guide li {
+  margin: 0 0 0.7rem;
+  color: var(--muted);
+}
+
+.mcp-guide ol,
+.mcp-guide ul {
+  margin: 0.35rem 0 0.2rem;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.mcp-guide li { margin: 0; }
+
+.mcp-guide ul a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.72rem 0.9rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.mcp-guide ul a::after {
+  content: "›";
+  color: var(--teal);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.mcp-guide ul a:hover {
+  border-color: var(--teal);
+  color: var(--teal-dark);
+}
+
+.mcp-guide a[href="https://luxuryforless.cruises/mcp"] {
+  display: inline-block;
+  margin-top: 0.15rem;
+  padding: 0.35rem 0.55rem;
+  background: var(--foam);
+  border-radius: 8px;
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.mcp-guide code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.mcp-guide p code,
+.mcp-guide li code {
+  padding: 0.05rem 0.32rem;
+  background: var(--foam);
+  border-radius: 4px;
+  color: var(--navy);
+}
+
+.mcp-guide pre {
+  margin: 0.45rem 0 0.9rem;
+  padding: 0.8rem 0.95rem;
+  overflow: auto;
+  background: var(--navy-deep);
+  color: #e7f4f6;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.mcp-guide pre code {
+  color: inherit;
+  background: transparent;
+  padding: 0;
+}
+
+.rate-notes {
+  margin-top: 1.6rem;
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--line);
+}
+
+.rate-notes h2 {
+  font-size: 1.05rem;
+  margin-bottom: 0.35rem;
+}
+
+.rate-notes .footnotes {
+  margin: 0.1rem 0 0;
+  max-width: 62rem;
 }
 
 .filters {
-  position: relative;
-  z-index: 3;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
   gap: 0.7rem 0.75rem;
-  margin: 0 0 0.9rem;
-  padding: 0.95rem 1rem 1rem;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  margin: 0;
 }
 
 .filter {
@@ -652,9 +807,35 @@ th button {
   cursor: pointer;
 }
 
-tbody tr:nth-child(even) { background: var(--sand); }
+tbody:nth-child(odd) > tr { background: var(--sand); }
 
 tbody tr:hover { background: var(--foam-deep); }
+
+tbody tr.quote-band,
+tbody tr.quote-band:hover { background: var(--foam); }
+
+.others {
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--included-bg);
+  color: var(--included);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.others:hover,
+.others:focus-visible { background: var(--foam-deep); }
+
+tr.quote-band td {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
 
 .num { text-align: right; white-space: nowrap; }
 .center { text-align: center; }
@@ -715,10 +896,8 @@ footer p { margin: 0; }
 .footer-nav a[aria-current="page"] { color: var(--navy); }
 
 @media (max-width: 960px) {
-  .workspace { grid-template-columns: minmax(0, 1fr); }
-  .rate-guide { position: static; }
   .rate-cards {
-    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   }
 }
 
@@ -744,6 +923,12 @@ footer p { margin: 0; }
     border-bottom: 1px solid var(--line);
   }
   tbody tr:nth-child(even) { background: #fff; }
+  tbody tr.quote-band { background: var(--foam); }
+  tr.quote-band td {
+    display: block;
+    text-align: left;
+    white-space: normal;
+  }
   td {
     display: flex;
     justify-content: space-between;
@@ -768,11 +953,9 @@ footer p { margin: 0; }
     padding-bottom: 1rem;
   }
   header::after,
-  .filters,
+  .controls,
   .skip,
   .crawl-date::after { display: none; }
-  .workspace { grid-template-columns: 1fr; }
-  .rate-guide { position: static; }
   .crawl-date-fresh time,
   .crawl-date-fresh .crawl-date-label { color: #157a45; }
   .crawl-date-aging time,

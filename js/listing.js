@@ -9,6 +9,7 @@ const TIER_ORDER = ["ECONOMY", "ALL_INCLUDED", "ULTRA"];
 const TIER_SORT_RANK = { ULTRA: 0, ALL_INCLUDED: 1, ECONOMY: 2 };
 const SYMBOLS = { EUR: "€", USD: "$", GBP: "£" };
 const MULTI_SELECT_IDS = ["filter-line", "filter-source", "filter-ship", "filter-comment"];
+const DEFAULT_DEPARTURE_DAYS = 89;
 
 function track(name, params) {
   if (typeof gtag !== "function") return;
@@ -106,6 +107,16 @@ function money(amount, currency) {
   return symbol + Number(amount).toLocaleString("en-GB");
 }
 
+function fxNote(fx) {
+  if (!fx || typeof fx.usd_eur !== "number" || !fx.date) return "";
+  const euros = fx.usd_eur.toLocaleString("en-GB", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 4,
+  });
+  return "One dollar was " + euros + " euros on " + formatDate(fx.date) +
+    " (European Central Bank). That rate orders a euro quote against a dollar quote of the same sailing. The prices themselves stay in the currency each site published.";
+}
+
 function formatDate(iso) {
   if (!iso) return "";
   const parts = String(iso).split("-");
@@ -141,12 +152,37 @@ function unique(field) {
   );
 }
 
+function quoteList(row) {
+  if (Array.isArray(row.quotes) && row.quotes.length) return row.quotes;
+  return [{
+    source: row.source || "",
+    source_label: row.source_label || row.source || "",
+    title: row.title || "",
+    lowest_price: row.lowest_price,
+    price_per_day: row.price_per_day,
+    currency: row.currency || "",
+    link: row.link || "",
+  }];
+}
+
+function sailingKey(row) {
+  return [row.cruiseline, row.ship, row.date, row.number_of_days, row.comment, row.currency, row.source].join("\u001f");
+}
+
+const openOverride = new Map();
+
+function othersLabel(count) {
+  return count === 1 ? "1 other" : count + " others";
+}
+
 function uniqueSources() {
   const seen = new Map();
   rows.forEach((row) => {
-    if (row.source && !seen.has(row.source)) {
-      seen.set(row.source, row.source_label || row.source);
-    }
+    quoteList(row).forEach((quote) => {
+      if (quote.source && !seen.has(quote.source)) {
+        seen.set(quote.source, quote.source_label || quote.source);
+      }
+    });
   });
   return [...seen.entries()].sort((left, right) => left[1].localeCompare(right[1], "en", { sensitivity: "base" }));
 }
@@ -160,14 +196,40 @@ function inSelected(selected, value) {
   return !selected || !selected.length || selected.indexOf(value) !== -1;
 }
 
+function shouldAutoOpen(row, filters) {
+  const others = quoteList(row).slice(1);
+  if (!others.length) return false;
+  if (filters.title) {
+    const needle = String(filters.title).toLowerCase();
+    const headline = String(row.title || "").toLowerCase().includes(needle);
+    const other = others.some((quote) => String(quote.title || "").toLowerCase().includes(needle));
+    if (other && !headline) return true;
+  }
+  if (filters.source && filters.source.length) {
+    const headline = filters.source.indexOf(row.source) !== -1;
+    const other = others.some((quote) => filters.source.indexOf(quote.source) !== -1);
+    if (other && !headline) return true;
+  }
+  return false;
+}
+
+function bandOpen(row) {
+  const key = sailingKey(row);
+  if (openOverride.has(key)) return openOverride.get(key);
+  return shouldAutoOpen(row, state);
+}
+
 function rowMatches(row, filters) {
-  if (!inSelected(filters.source, row.source)) return false;
+  const quotes = quoteList(row);
+  if (filters.source && filters.source.length && !quotes.some((quote) => filters.source.indexOf(quote.source) !== -1)) {
+    return false;
+  }
   if (!inSelected(filters.cruiseline, row.cruiseline)) return false;
   if (!inSelected(filters.ship, row.ship)) return false;
   if (!inSelected(filters.comment, row.comment)) return false;
   if (filters.title) {
-    const haystack = String(row.title || "").toLowerCase();
-    if (!haystack.includes(filters.title)) return false;
+    const needle = String(filters.title).toLowerCase();
+    if (!quotes.some((quote) => String(quote.title || "").toLowerCase().includes(needle))) return false;
   }
   if (filters.nightsMin != null && (row.number_of_days == null || row.number_of_days < filters.nightsMin)) return false;
   if (filters.nightsMax != null && (row.number_of_days == null || row.number_of_days > filters.nightsMax)) return false;
@@ -198,6 +260,22 @@ function isoToDay(iso) {
 
 function dayToIso(day) {
   return new Date(day * 86400000).toISOString().slice(0, 10);
+}
+
+function todayDay(now) {
+  const date = now instanceof Date ? now : new Date();
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000;
+}
+
+function defaultDepartureWindow(now) {
+  const start = todayDay(now);
+  return { min: start, max: start + DEFAULT_DEPARTURE_DAYS };
+}
+
+let departureWindow = null;
+
+function setDepartureWindow(window) {
+  departureWindow = window;
 }
 
 function formatNumber(value) {
@@ -332,6 +410,9 @@ function isDefaultNumericRange(min, max, range) {
 }
 
 function isDefaultDateRange(from, to, range) {
+  if (departureWindow) {
+    return from === dayToIso(departureWindow.min) && to === dayToIso(departureWindow.max);
+  }
   if (!range) return !from && !to;
   return from === dayToIso(range.min) && to === dayToIso(range.max);
 }
@@ -496,7 +577,7 @@ function setupMultiSelect(id, values, labels, setter, filterName) {
   paint();
 }
 
-function setupDualSlider(rootId, minId, maxId, range, step, format, apply, filterName) {
+function setupDualSlider(rootId, minId, maxId, range, step, format, apply, filterName, initial) {
   const root = document.getElementById(rootId);
   const minEl = document.getElementById(minId);
   const maxEl = document.getElementById(maxId);
@@ -573,9 +654,11 @@ function setupDualSlider(rootId, minId, maxId, range, step, format, apply, filte
     maxEl.addEventListener("change", commit);
   }
 
+  const start = initial || { min: range.min, max: range.max };
+
   function reset() {
-    minEl.value = range.min;
-    maxEl.value = range.max;
+    minEl.value = start.min;
+    maxEl.value = start.max;
     paint();
   }
 
@@ -686,7 +769,57 @@ function syncRateCards() {
   });
 }
 
-function render() {
+function offerLink(href, line, source, title) {
+  if (!href) return "";
+  return '<a class="offer" href="' + escapeHtml(href) + '" target="_blank" rel="noopener"' +
+    ' data-line="' + escapeHtml(line || "") + '"' +
+    ' data-source="' + escapeHtml(source || "") + '"' +
+    ' data-title="' + escapeHtml(title || "") + '">Open</a>';
+}
+
+function sailingHtml(row, open) {
+  const others = quoteList(row).slice(1);
+  const tierClass = "tier-" + String(row.comment || "").toLowerCase();
+  const tierLabel = TIER_LABELS[row.comment] || row.comment || "";
+  let sourceCell = escapeHtml(row.source_label || row.source);
+  if (others.length) {
+    sourceCell +=
+      '<button type="button" class="others" data-others="' + escapeHtml(sailingKey(row)) + '"' +
+      ' aria-expanded="' + (open ? "true" : "false") + '">' +
+      othersLabel(others.length) + "</button>";
+  }
+  let html =
+    "<tr>" +
+    '<td data-label="Title">' + escapeHtml(row.title) + "</td>" +
+    '<td data-label="Line">' + escapeHtml(row.cruiseline) + "</td>" +
+    '<td data-label="Source">' + sourceCell + "</td>" +
+    '<td data-label="Ship">' + escapeHtml(row.ship) + "</td>" +
+    '<td data-label="Departs">' + formatDate(row.date) + "</td>" +
+    '<td class="num" data-label="Nights">' + (row.number_of_days ?? "") + "</td>" +
+    '<td class="num" data-label="Price">' + money(row.lowest_price, row.currency) + "</td>" +
+    '<td class="num" data-label="Per night">' + money(row.price_per_day, row.currency) + "</td>" +
+    '<td class="center" data-label="Rate"><span class="tier ' + escapeHtml(tierClass) + '">' +
+      escapeHtml(tierLabel) + "</span></td>" +
+    '<td class="center" data-label="Offer">' + offerLink(offerUrl(row.link), row.cruiseline, row.source, row.title) + "</td>" +
+    "</tr>";
+  if (open) {
+    others.forEach((quote) => {
+      const bits = [escapeHtml(quote.source_label || quote.source)];
+      if (quote.title && quote.title !== row.title) bits.push(escapeHtml(quote.title));
+      const currency = quote.currency || row.currency;
+      bits.push(escapeHtml(money(quote.lowest_price, currency)));
+      bits.push(escapeHtml(money(quote.price_per_day, currency)) + "/night");
+      const link = offerLink(offerUrl(quote.link), row.cruiseline, quote.source, quote.title);
+      html +=
+        '<tr class="quote-band"><td colspan="10" data-label="Also">' +
+        bits.join(" · ") + (link ? " · " + link : "") + "</td></tr>";
+    });
+  }
+  return html;
+}
+
+function render(options) {
+  if (!options || !options.keepOpen) openOverride.clear();
   const visible = rows.filter(matches).sort(compare);
   const currencies = uniqueFrom(visible, "currency");
   const cheapest = cheapestByCurrency(visible);
@@ -714,32 +847,7 @@ function render() {
     return;
   }
 
-  const body = visible.map((row) => {
-    const href = offerUrl(row.link);
-    const tierClass = "tier-" + String(row.comment || "").toLowerCase();
-    const tierLabel = TIER_LABELS[row.comment] || row.comment || "";
-    const linkCell = href
-      ? '<a class="offer" href="' + escapeHtml(href) + '" target="_blank" rel="noopener"' +
-        ' data-line="' + escapeHtml(row.cruiseline) + '"' +
-        ' data-source="' + escapeHtml(row.source) + '"' +
-        ' data-title="' + escapeHtml(row.title) + '">Open</a>'
-      : "";
-    return (
-      "<tr>" +
-      '<td data-label="Title">' + escapeHtml(row.title) + "</td>" +
-      '<td data-label="Line">' + escapeHtml(row.cruiseline) + "</td>" +
-      '<td data-label="Source">' + escapeHtml(row.source_label || row.source) + "</td>" +
-      '<td data-label="Ship">' + escapeHtml(row.ship) + "</td>" +
-      '<td data-label="Departs">' + formatDate(row.date) + "</td>" +
-      '<td class="num" data-label="Nights">' + (row.number_of_days ?? "") + "</td>" +
-      '<td class="num" data-label="Price">' + money(row.lowest_price, row.currency) + "</td>" +
-      '<td class="num" data-label="Per night">' + money(row.price_per_day, row.currency) + "</td>" +
-      '<td class="center" data-label="Rate"><span class="tier ' + escapeHtml(tierClass) + '">' +
-        escapeHtml(tierLabel) + "</span></td>" +
-      '<td class="center" data-label="Offer">' + linkCell + "</td>" +
-      "</tr>"
-    );
-  }).join("");
+  const body = visible.map((row) => '<tbody>' + sailingHtml(row, bandOpen(row)) + "</tbody>").join("");
 
   wrap.innerHTML =
     "<table><thead><tr>" +
@@ -753,7 +861,7 @@ function render() {
     headerButton("price_per_day", "Per night", "num") +
     headerButton("comment", "Rate", "center") +
     '<th class="center"></th>' +
-    "</tr></thead><tbody>" + body + "</tbody></table>";
+    "</tr></thead>" + body + "</table>";
   writeQuery();
 }
 
@@ -805,7 +913,38 @@ function markCrawlDateFreshness() {
   root.setAttribute("aria-label", "Last update: " + titles[kind]);
 }
 
+function setupControlTabs() {
+  const tabs = Array.from(document.querySelectorAll('.tablist [role="tab"]'));
+  if (!tabs.length) return;
+
+  function select(tab) {
+    tabs.forEach((item) => {
+      const on = item === tab;
+      item.setAttribute("aria-selected", on ? "true" : "false");
+      item.tabIndex = on ? 0 : -1;
+      const panel = document.getElementById(item.getAttribute("aria-controls"));
+      if (panel) panel.hidden = !on;
+    });
+  }
+
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("keydown", (event) => {
+      let next = null;
+      if (event.key === "ArrowRight") next = tabs[(index + 1) % tabs.length];
+      else if (event.key === "ArrowLeft") next = tabs[(index - 1 + tabs.length) % tabs.length];
+      else if (event.key === "Home") next = tabs[0];
+      else if (event.key === "End") next = tabs[tabs.length - 1];
+      if (!next) return;
+      event.preventDefault();
+      select(next);
+      next.focus();
+    });
+  });
+}
+
 function initListing() {
+  setupControlTabs();
   const sourceOptions = uniqueSources();
   setupMultiSelect(
     "filter-line",
@@ -840,8 +979,13 @@ function initListing() {
   const priceBounds = bounds("lowest_price");
   const ppdBounds = bounds("price_per_day");
   const dates = unique("date");
+  const departure = defaultDepartureWindow();
+  setDepartureWindow(departure);
   const dateBounds = dates.length
-    ? { min: isoToDay(dates[0]), max: isoToDay(dates[dates.length - 1]) }
+    ? {
+        min: Math.min(isoToDay(dates[0]), departure.min),
+        max: Math.max(isoToDay(dates[dates.length - 1]), departure.max),
+      }
     : null;
 
   setupDualSlider(
@@ -895,6 +1039,7 @@ function initListing() {
       state.dateTo = dayToIso(hi);
     },
     "departs",
+    departure,
   );
 
   bindText("filter-title", (value) => {
@@ -940,6 +1085,17 @@ function initListing() {
   const tableWrap = document.getElementById("table-wrap");
   if (tableWrap) {
     tableWrap.addEventListener("click", (event) => {
+      const others = event.target.closest("[data-others]");
+      if (others) {
+        const key = others.getAttribute("data-others");
+        const row = rows.find((item) => sailingKey(item) === key);
+        if (row) {
+          const open = openOverride.has(key) ? openOverride.get(key) : shouldAutoOpen(row, state);
+          openOverride.set(key, !open);
+          render({ keepOpen: true });
+        }
+        return;
+      }
       const offer = event.target.closest("a.offer");
       if (offer) {
         trackOffer(offer.href, {
@@ -969,6 +1125,13 @@ function initListing() {
   });
 
   markCrawlDateFreshness();
+  const footnotes = document.querySelector(".footnotes");
+  const note = fxNote(data.fx);
+  if (footnotes && note) {
+    const item = document.createElement("li");
+    item.textContent = note;
+    footnotes.appendChild(item);
+  }
   render();
 }
 
@@ -980,8 +1143,14 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     inSelected,
     rowMatches,
+    shouldAutoOpen,
+    sailingHtml,
+    fxNote,
     defaultState,
     defaultSorts,
+    defaultDepartureWindow,
+    setDepartureWindow,
+    dayToIso,
     tierRank,
     compareRows,
     parseListingQuery,
