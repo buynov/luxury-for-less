@@ -12,6 +12,9 @@
   --panel: #fffcf8;
   --gold: #c4a35a;
   --gold-ink: #7a5e1e;
+  --sunset: #dfb84f;
+  --sunset-coral: #cf684e;
+  --sunset-coral-dark: #a84935;
   --economy: #4d6a75;
   --economy-bg: #e4ecef;
   --included: #1a7a8c;
@@ -784,6 +787,11 @@ th, td {
   vertical-align: top;
 }
 
+td.route {
+  max-width: 14rem;
+  white-space: normal;
+}
+
 th {
   position: sticky;
   top: 0;
@@ -814,27 +822,154 @@ tbody tr:hover { background: var(--foam-deep); }
 tbody tr.quote-band,
 tbody tr.quote-band:hover { background: var(--foam); }
 
-.others {
-  margin-left: 0.35rem;
-  padding: 0.05rem 0.45rem;
+.primary-price {
+  display: flex;
+  align-items: flex-end;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.primary-price-value {
+  color: var(--navy);
+  font-weight: 750;
+}
+
+.compare-fares {
+  padding: 0.3rem 0.58rem;
   border: 0;
-  border-radius: 999px;
-  background: var(--included-bg);
-  color: var(--included);
+  border-radius: 7px;
+  background: var(--navy);
+  color: #fff;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   line-height: 1.4;
   cursor: pointer;
   white-space: nowrap;
 }
 
-.others:hover,
-.others:focus-visible { background: var(--foam-deep); }
+.compare-fares:hover { background: var(--teal-dark); }
 
-tr.quote-band td {
+a.compare-fares {
+  display: inline-block;
+  text-decoration: none;
+  color: #fff;
+}
+
+a.compare-fares:hover {
+  text-decoration: none;
+  color: #fff;
+}
+
+.compare-fares:focus-visible {
+  outline: 2px solid var(--sunset-coral);
+  outline-offset: 2px;
+}
+
+tr.quote-band > td {
+  padding: 0.9rem 1rem 1rem;
+  white-space: normal;
+}
+
+.fare-options-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.fare-options-heading strong {
+  color: var(--navy);
+  font-family: var(--display);
+  font-size: 1rem;
+}
+
+.fare-options-heading span {
   color: var(--muted);
-  font-size: 0.82rem;
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fare-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr));
+  gap: 0.65rem;
+}
+
+.fare-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem 0.8rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.fare-option.is-best {
+  border-color: var(--sunset-coral);
+  background: #fffaf3;
+}
+
+.fare-option-source,
+.fare-option-price {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.fare-option-price {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.fare-option-source strong,
+.fare-option-price strong {
+  color: var(--navy);
+  font-size: 0.86rem;
+}
+
+.fare-option-note {
+  color: var(--sunset-coral-dark);
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fare-option-title,
+.fare-option-price span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.3;
+}
+
+.fare-option-title {
+  display: -webkit-box;
+  margin-top: 0.12rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.fare-option .offer {
+  grid-column: 1 / -1;
+  align-self: start;
+  justify-self: start;
+  padding: 0.35rem 0.58rem;
+  border-radius: 7px;
+  background: var(--sunset-coral);
+  color: #fff;
+  font-size: 0.7rem;
+  text-decoration: none;
+}
+
+.fare-option .offer:hover {
+  background: var(--sunset-coral-dark);
+  text-decoration: none;
 }
 
 .num { text-align: right; white-space: nowrap; }
@@ -923,12 +1058,17 @@ footer p { margin: 0; }
     border-bottom: 1px solid var(--line);
   }
   tbody tr:nth-child(even) { background: #fff; }
-  tbody tr.quote-band { background: var(--foam); }
+  tbody tr.quote-band {
+    padding: 0;
+    background: var(--foam);
+  }
   tr.quote-band td {
     display: block;
+    padding: 0.85rem;
     text-align: left;
     white-space: normal;
   }
+  tr.quote-band td::before { display: none; }
   td {
     display: flex;
     justify-content: space-between;
@@ -944,6 +1084,13 @@ footer p { margin: 0; }
     text-align: left;
   }
   .num, .center { text-align: right; }
+  .fare-options-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .fare-options-grid { grid-template-columns: 1fr; }
+  .fare-option { padding: 0.75rem; }
 }
 
 @media print {

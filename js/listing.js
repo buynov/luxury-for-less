@@ -8,7 +8,7 @@ const TIER_LABELS = {
 const TIER_ORDER = ["ECONOMY", "ALL_INCLUDED", "ULTRA"];
 const TIER_SORT_RANK = { ULTRA: 0, ALL_INCLUDED: 1, ECONOMY: 2 };
 const SYMBOLS = { EUR: "€", USD: "$", GBP: "£" };
-const MULTI_SELECT_IDS = ["filter-line", "filter-source", "filter-ship", "filter-comment"];
+const MULTI_SELECT_IDS = ["filter-line", "filter-ship", "filter-comment"];
 const DEFAULT_DEPARTURE_DAYS = 89;
 
 function track(name, params) {
@@ -43,7 +43,6 @@ function trackOffer(href, row) {
 function defaultState() {
   return {
     title: "",
-    source: [],
     cruiseline: [],
     ship: [],
     comment: [],
@@ -76,6 +75,7 @@ const SORT_FIELDS = {
   cruiseline: true,
   source_label: true,
   ship: true,
+  start_port: true,
   date: true,
   number_of_days: true,
   lowest_price: true,
@@ -158,6 +158,8 @@ function quoteList(row) {
     source: row.source || "",
     source_label: row.source_label || row.source || "",
     title: row.title || "",
+    start_port: row.start_port || "",
+    end_port: row.end_port || "",
     lowest_price: row.lowest_price,
     price_per_day: row.price_per_day,
     currency: row.currency || "",
@@ -171,20 +173,14 @@ function sailingKey(row) {
 
 const openOverride = new Map();
 
-function othersLabel(count) {
-  return count === 1 ? "1 other" : count + " others";
+function faresLabel(count, open) {
+  if (open) return "Hide fares";
+  return "Compare " + count + " fares";
 }
 
-function uniqueSources() {
-  const seen = new Map();
-  rows.forEach((row) => {
-    quoteList(row).forEach((quote) => {
-      if (quote.source && !seen.has(quote.source)) {
-        seen.set(quote.source, quote.source_label || quote.source);
-      }
-    });
-  });
-  return [...seen.entries()].sort((left, right) => left[1].localeCompare(right[1], "en", { sensitivity: "base" }));
+function singleFareLabel(quote) {
+  const name = (quote && (quote.source_label || quote.source)) || "source";
+  return "View " + name + " fare";
 }
 
 function uniqueTiers() {
@@ -196,21 +192,23 @@ function inSelected(selected, value) {
   return !selected || !selected.length || selected.indexOf(value) !== -1;
 }
 
+function searchNeedle(filters) {
+  return filters.title ? String(filters.title).toLowerCase() : "";
+}
+
+function quoteMatchesSearch(quote, needle) {
+  if (!needle) return true;
+  return [quote && quote.title, quote && quote.source_label, quote && quote.source, quote && quote.start_port, quote && quote.end_port].some((value) =>
+    String(value || "").toLowerCase().includes(needle),
+  );
+}
+
 function shouldAutoOpen(row, filters) {
-  const others = quoteList(row).slice(1);
-  if (!others.length) return false;
-  if (filters.title) {
-    const needle = String(filters.title).toLowerCase();
-    const headline = String(row.title || "").toLowerCase().includes(needle);
-    const other = others.some((quote) => String(quote.title || "").toLowerCase().includes(needle));
-    if (other && !headline) return true;
-  }
-  if (filters.source && filters.source.length) {
-    const headline = filters.source.indexOf(row.source) !== -1;
-    const other = others.some((quote) => filters.source.indexOf(quote.source) !== -1);
-    if (other && !headline) return true;
-  }
-  return false;
+  const needle = searchNeedle(filters);
+  const quotes = quoteList(row);
+  if (!needle || quotes.length < 2) return false;
+  if (quoteMatchesSearch(quotes[0], needle) || quoteMatchesSearch(row, needle)) return false;
+  return quotes.slice(1).some((quote) => quoteMatchesSearch(quote, needle));
 }
 
 function bandOpen(row) {
@@ -221,16 +219,11 @@ function bandOpen(row) {
 
 function rowMatches(row, filters) {
   const quotes = quoteList(row);
-  if (filters.source && filters.source.length && !quotes.some((quote) => filters.source.indexOf(quote.source) !== -1)) {
-    return false;
-  }
   if (!inSelected(filters.cruiseline, row.cruiseline)) return false;
   if (!inSelected(filters.ship, row.ship)) return false;
   if (!inSelected(filters.comment, row.comment)) return false;
-  if (filters.title) {
-    const needle = String(filters.title).toLowerCase();
-    if (!quotes.some((quote) => String(quote.title || "").toLowerCase().includes(needle))) return false;
-  }
+  const needle = searchNeedle(filters);
+  if (needle && !quotes.some((quote) => quoteMatchesSearch(quote, needle)) && !quoteMatchesSearch(row, needle)) return false;
   if (filters.nightsMin != null && (row.number_of_days == null || row.number_of_days < filters.nightsMin)) return false;
   if (filters.nightsMax != null && (row.number_of_days == null || row.number_of_days > filters.nightsMax)) return false;
   if (filters.priceMin != null && (row.lowest_price == null || row.lowest_price < filters.priceMin)) return false;
@@ -351,9 +344,9 @@ function parseSorts(raw) {
 function parseListingQuery(search) {
   const params = listingParams(search);
   const patch = {};
-  if (params.has("title")) patch.title = (params.get("title") || "").trim().toLowerCase();
+  const text = params.has("search") ? params.get("search") : params.get("title");
+  if (text != null) patch.title = String(text).trim().toLowerCase();
   if (params.has("line")) patch.cruiseline = readList(params, "line");
-  if (params.has("source")) patch.source = readList(params, "source");
   if (params.has("ship")) patch.ship = readList(params, "ship");
   if (params.has("rate")) {
     patch.comment = readList(params, "rate").map(normalizeTier).filter(Boolean);
@@ -382,7 +375,6 @@ function applyListingPatch(patch) {
   if (!patch) return;
   if (patch.title != null) state.title = patch.title;
   if (patch.cruiseline) state.cruiseline = patch.cruiseline;
-  if (patch.source) state.source = patch.source;
   if (patch.ship) state.ship = patch.ship;
   if (patch.comment) state.comment = patch.comment;
   if (patch.sorts) state.sorts = patch.sorts;
@@ -421,9 +413,8 @@ function queryFromState(filters, bounds) {
   const current = filters || state;
   const ranges = bounds || sliderBounds;
   const params = new URLSearchParams();
-  if (current.title) params.set("title", current.title);
+  if (current.title) params.set("search", current.title);
   writeList(params, "line", current.cruiseline);
-  writeList(params, "source", current.source);
   writeList(params, "ship", current.ship);
   writeList(params, "rate", current.comment);
   if (!isDefaultNumericRange(current.nightsMin, current.nightsMax, ranges.nights)) {
@@ -441,7 +432,21 @@ function queryFromState(filters, bounds) {
   if (!sortsEqual(current.sorts, defaultSorts())) {
     params.set("sort", current.sorts.map((spec) => spec.key + ":" + spec.dir).join(","));
   }
+  if (listingTab === "mcp") params.set("tab", "mcp");
   return params;
+}
+
+let listingTab = "";
+
+function setListingTab(name) {
+  listingTab = name === "mcp" ? "mcp" : "";
+}
+
+function listingTabFromSearch(search, hash) {
+  const tab = new URLSearchParams(String(search || "").replace(/^\?/, "")).get("tab");
+  if (tab === "mcp") return "mcp";
+  if (hash === "#mcp") return "mcp";
+  return "";
 }
 
 function writeQuery() {
@@ -449,7 +454,7 @@ function writeQuery() {
     return;
   }
   const search = queryFromState().toString();
-  const hash = window.location.hash || "";
+  const hash = window.location.hash === "#mcp" ? "" : (window.location.hash || "");
   const next = window.location.pathname + (search ? "?" + search : "") + hash;
   const current = window.location.pathname + window.location.search + hash;
   if (next === current) return;
@@ -462,7 +467,6 @@ function syncListingControls() {
   const title = document.getElementById("filter-title");
   if (title) title.value = state.title;
   if (multiSelects["filter-line"]) multiSelects["filter-line"].setSelected(state.cruiseline);
-  if (multiSelects["filter-source"]) multiSelects["filter-source"].setSelected(state.source);
   if (multiSelects["filter-ship"]) multiSelects["filter-ship"].setSelected(state.ship);
   if (multiSelects["filter-comment"]) multiSelects["filter-comment"].setSelected(state.comment);
   if (sliders.nights) sliders.nights.setValues(state.nightsMin, state.nightsMax);
@@ -698,6 +702,8 @@ function compareValues(left, right, key, dir) {
     const diff = tierRank(left) - tierRank(right);
     return dir === "asc" ? diff : -diff;
   }
+  if (left === "") left = null;
+  if (right === "") right = null;
   if (left == null && right == null) return 0;
   if (left == null) return 1;
   if (right == null) return -1;
@@ -769,51 +775,97 @@ function syncRateCards() {
   });
 }
 
-function offerLink(href, line, source, title) {
+function offerLink(href, line, source, title, label, extraClass) {
   if (!href) return "";
-  return '<a class="offer" href="' + escapeHtml(href) + '" target="_blank" rel="noopener"' +
+  const classes = extraClass ? "offer " + extraClass : "offer";
+  return '<a class="' + classes + '" href="' + escapeHtml(href) + '" target="_blank" rel="noopener"' +
     ' data-line="' + escapeHtml(line || "") + '"' +
     ' data-source="' + escapeHtml(source || "") + '"' +
-    ' data-title="' + escapeHtml(title || "") + '">Open</a>';
+    ' data-title="' + escapeHtml(title || "") + '">' + escapeHtml(label || "Open") + "</a>";
+}
+
+function fareOptionsHtml(row) {
+  const quotes = quoteList(row);
+  const options = quotes.map((quote, index) => {
+    const currency = quote.currency || row.currency;
+    const title = quote.title && quote.title !== row.title
+      ? '<span class="fare-option-title">' + escapeHtml(quote.title) + "</span>"
+      : "";
+    return (
+      '<article class="fare-option' + (index === 0 ? " is-best" : "") + '">' +
+      '<div class="fare-option-source">' +
+      '<span class="fare-option-note">' + (index === 0 ? "Best available" : "Alternative fare") + "</span>" +
+      "<strong>" + escapeHtml(quote.source_label || quote.source) + "</strong>" +
+      title +
+      "</div>" +
+      '<div class="fare-option-price">' +
+      "<strong>" + escapeHtml(money(quote.lowest_price, currency)) + "</strong>" +
+      "<span>" + escapeHtml(money(quote.price_per_day, currency)) + " / night</span>" +
+      "</div>" +
+      offerLink(
+        offerUrl(quote.link),
+        row.cruiseline,
+        quote.source,
+        quote.title,
+        "Open offer",
+      ) +
+      "</article>"
+    );
+  }).join("");
+  return (
+    '<div class="fare-options">' +
+    '<div class="fare-options-heading"><strong>Choose a fare source</strong>' +
+    "<span>Prices shown as published</span></div>" +
+    '<div class="fare-options-grid">' + options + "</div>" +
+    "</div>"
+  );
+}
+
+function routeText(row) {
+  const start = (row && row.start_port) || "";
+  const end = (row && row.end_port) || "";
+  if (start && end) return start + " → " + end;
+  return start || end || "—";
+}
+
+function singleFareControl(row, quote) {
+  const label = singleFareLabel(quote);
+  const href = offerUrl(quote.link);
+  if (!href) return '<span class="compare-fares">' + escapeHtml(label) + "</span>";
+  return offerLink(href, row.cruiseline, quote.source, quote.title, label, "compare-fares");
 }
 
 function sailingHtml(row, open) {
-  const others = quoteList(row).slice(1);
+  const quotes = quoteList(row);
   const tierClass = "tier-" + String(row.comment || "").toLowerCase();
   const tierLabel = TIER_LABELS[row.comment] || row.comment || "";
-  let sourceCell = escapeHtml(row.source_label || row.source);
-  if (others.length) {
-    sourceCell +=
-      '<button type="button" class="others" data-others="' + escapeHtml(sailingKey(row)) + '"' +
+  const alone = quotes.length === 1;
+  const priceAction = alone
+    ? singleFareControl(row, quotes[0])
+    : '<button type="button" class="compare-fares" data-others="' + escapeHtml(sailingKey(row)) + '"' +
       ' aria-expanded="' + (open ? "true" : "false") + '">' +
-      othersLabel(others.length) + "</button>";
-  }
+      faresLabel(quotes.length, open) + "</button>";
+  const priceCell =
+    '<div class="primary-price">' +
+    '<span class="primary-price-value">' + escapeHtml(money(row.lowest_price, row.currency)) + "</span>" +
+    priceAction + "</div>";
   let html =
     "<tr>" +
     '<td data-label="Title">' + escapeHtml(row.title) + "</td>" +
     '<td data-label="Line">' + escapeHtml(row.cruiseline) + "</td>" +
-    '<td data-label="Source">' + sourceCell + "</td>" +
     '<td data-label="Ship">' + escapeHtml(row.ship) + "</td>" +
+    '<td class="route" data-label="From / To">' + escapeHtml(routeText(row)) + "</td>" +
     '<td data-label="Departs">' + formatDate(row.date) + "</td>" +
     '<td class="num" data-label="Nights">' + (row.number_of_days ?? "") + "</td>" +
-    '<td class="num" data-label="Price">' + money(row.lowest_price, row.currency) + "</td>" +
     '<td class="num" data-label="Per night">' + money(row.price_per_day, row.currency) + "</td>" +
     '<td class="center" data-label="Rate"><span class="tier ' + escapeHtml(tierClass) + '">' +
       escapeHtml(tierLabel) + "</span></td>" +
-    '<td class="center" data-label="Offer">' + offerLink(offerUrl(row.link), row.cruiseline, row.source, row.title) + "</td>" +
+    '<td class="num price-cell" data-label="Price">' + priceCell + "</td>" +
     "</tr>";
-  if (open) {
-    others.forEach((quote) => {
-      const bits = [escapeHtml(quote.source_label || quote.source)];
-      if (quote.title && quote.title !== row.title) bits.push(escapeHtml(quote.title));
-      const currency = quote.currency || row.currency;
-      bits.push(escapeHtml(money(quote.lowest_price, currency)));
-      bits.push(escapeHtml(money(quote.price_per_day, currency)) + "/night");
-      const link = offerLink(offerUrl(quote.link), row.cruiseline, quote.source, quote.title);
-      html +=
-        '<tr class="quote-band"><td colspan="10" data-label="Also">' +
-        bits.join(" · ") + (link ? " · " + link : "") + "</td></tr>";
-    });
+  if (open && !alone) {
+    html +=
+      '<tr class="quote-band"><td colspan="9" data-label="Fare options">' +
+      fareOptionsHtml(row) + "</td></tr>";
   }
   return html;
 }
@@ -853,14 +905,13 @@ function render(options) {
     "<table><thead><tr>" +
     headerButton("title", "Title", "") +
     headerButton("cruiseline", "Line", "") +
-    headerButton("source_label", "Source", "") +
     headerButton("ship", "Ship", "") +
+    headerButton("start_port", "From / To", "") +
     headerButton("date", "Departs", "") +
     headerButton("number_of_days", "Nights", "num") +
-    headerButton("lowest_price", "Price", "num") +
     headerButton("price_per_day", "Per night", "num") +
     headerButton("comment", "Rate", "center") +
-    '<th class="center"></th>' +
+    headerButton("lowest_price", "Price", "num") +
     "</tr></thead>" + body + "</table>";
   writeQuery();
 }
@@ -917,7 +968,7 @@ function setupControlTabs() {
   const tabs = Array.from(document.querySelectorAll('.tablist [role="tab"]'));
   if (!tabs.length) return;
 
-  function select(tab) {
+  function select(tab, silent) {
     tabs.forEach((item) => {
       const on = item === tab;
       item.setAttribute("aria-selected", on ? "true" : "false");
@@ -925,6 +976,17 @@ function setupControlTabs() {
       const panel = document.getElementById(item.getAttribute("aria-controls"));
       if (panel) panel.hidden = !on;
     });
+    setListingTab(tab.id === "tab-mcp" ? "mcp" : "");
+    if (!silent) writeQuery();
+  }
+
+  const opened = listingTabFromSearch(
+    typeof window !== "undefined" && window.location ? window.location.search : "",
+    typeof window !== "undefined" && window.location ? window.location.hash : "",
+  );
+  if (opened === "mcp") {
+    const mcp = document.getElementById("tab-mcp");
+    if (mcp) select(mcp, true);
   }
 
   tabs.forEach((tab, index) => {
@@ -945,20 +1007,12 @@ function setupControlTabs() {
 
 function initListing() {
   setupControlTabs();
-  const sourceOptions = uniqueSources();
   setupMultiSelect(
     "filter-line",
     unique("cruiseline"),
     null,
     (values) => { state.cruiseline = values; },
     "line",
-  );
-  setupMultiSelect(
-    "filter-source",
-    sourceOptions.map((entry) => entry[0]),
-    Object.fromEntries(sourceOptions),
-    (values) => { state.source = values; },
-    "source",
   );
   setupMultiSelect(
     "filter-ship",
@@ -1044,7 +1098,7 @@ function initListing() {
 
   bindText("filter-title", (value) => {
     state.title = value.trim().toLowerCase();
-  }, "title");
+  }, "search");
 
   if (typeof window !== "undefined" && window.location) {
     applyListingPatch(parseListingQuery(window.location.search));
@@ -1155,6 +1209,8 @@ if (typeof module !== "undefined" && module.exports) {
     compareRows,
     parseListingQuery,
     queryFromState,
+    setListingTab,
+    listingTabFromSearch,
     applyListingPatch,
     sortsEqual,
     normalizeTier,
