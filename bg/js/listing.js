@@ -432,20 +432,26 @@ function queryFromState(filters, bounds) {
   if (!sortsEqual(current.sorts, defaultSorts())) {
     params.set("sort", current.sorts.map((spec) => spec.key + ":" + spec.dir).join(","));
   }
-  if (listingTab === "mcp") params.set("tab", "mcp");
+  if (listingTab) params.set("tab", listingTab);
   return params;
 }
+
+const LISTING_TABS = Object.assign(Object.create(null), {
+  rates: "tab-rates",
+  mcp: "tab-mcp",
+});
 
 let listingTab = "";
 
 function setListingTab(name) {
-  listingTab = name === "mcp" ? "mcp" : "";
+  listingTab = Object.prototype.hasOwnProperty.call(LISTING_TABS, name) ? name : "";
 }
 
 function listingTabFromSearch(search, hash) {
   const tab = new URLSearchParams(String(search || "").replace(/^\?/, "")).get("tab");
-  if (tab === "mcp") return "mcp";
-  if (hash === "#mcp") return "mcp";
+  if (Object.prototype.hasOwnProperty.call(LISTING_TABS, tab)) return tab;
+  const fromHash = String(hash || "").replace(/^#/, "");
+  if (Object.prototype.hasOwnProperty.call(LISTING_TABS, fromHash)) return fromHash;
   return "";
 }
 
@@ -454,7 +460,8 @@ function writeQuery() {
     return;
   }
   const search = queryFromState().toString();
-  const hash = window.location.hash === "#mcp" ? "" : (window.location.hash || "");
+  const fromHash = String(window.location.hash || "").replace(/^#/, "");
+  const hash = Object.prototype.hasOwnProperty.call(LISTING_TABS, fromHash) ? "" : (window.location.hash || "");
   const next = window.location.pathname + (search ? "?" + search : "") + hash;
   const current = window.location.pathname + window.location.search + hash;
   if (next === current) return;
@@ -831,8 +838,8 @@ function routeText(row) {
 function singleFareControl(row, quote) {
   const label = singleFareLabel(quote);
   const href = offerUrl(quote.link);
-  if (!href) return '<span class="compare-fares">' + escapeHtml(label) + "</span>";
-  return offerLink(href, row.cruiseline, quote.source, quote.title, label, "compare-fares");
+  if (!href) return '<span class="view-fare">' + escapeHtml(label) + "</span>";
+  return offerLink(href, row.cruiseline, quote.source, quote.title, label, "view-fare");
 }
 
 function sailingHtml(row, open) {
@@ -976,7 +983,8 @@ function setupControlTabs() {
       const panel = document.getElementById(item.getAttribute("aria-controls"));
       if (panel) panel.hidden = !on;
     });
-    setListingTab(tab.id === "tab-mcp" ? "mcp" : "");
+    const name = tab.id.startsWith("tab-") ? tab.id.slice(4) : "";
+    setListingTab(name);
     if (!silent) writeQuery();
   }
 
@@ -984,9 +992,9 @@ function setupControlTabs() {
     typeof window !== "undefined" && window.location ? window.location.search : "",
     typeof window !== "undefined" && window.location ? window.location.hash : "",
   );
-  if (opened === "mcp") {
-    const mcp = document.getElementById("tab-mcp");
-    if (mcp) select(mcp, true);
+  if (opened) {
+    const button = document.getElementById(LISTING_TABS[opened]);
+    if (button) select(button, true);
   }
 
   tabs.forEach((tab, index) => {

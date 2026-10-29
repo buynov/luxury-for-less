@@ -835,6 +835,9 @@ tbody tr.quote-band:hover { background: var(--foam); }
 }
 
 .compare-fares {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
   padding: 0.3rem 0.58rem;
   border: 0;
   border-radius: 7px;
@@ -848,21 +851,64 @@ tbody tr.quote-band:hover { background: var(--foam); }
   white-space: nowrap;
 }
 
+.compare-fares::after {
+  content: "";
+  width: 0.32rem;
+  height: 0.32rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.12em) rotate(45deg);
+}
+
+.compare-fares[aria-expanded="true"]::after {
+  transform: translateY(0.1em) rotate(225deg);
+}
+
 .compare-fares:hover { background: var(--teal-dark); }
-
-a.compare-fares {
-  display: inline-block;
-  text-decoration: none;
-  color: #fff;
-}
-
-a.compare-fares:hover {
-  text-decoration: none;
-  color: #fff;
-}
 
 .compare-fares:focus-visible {
   outline: 2px solid var(--sunset-coral);
+  outline-offset: 2px;
+}
+
+.view-fare {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.3rem 0.58rem;
+  border-radius: 7px;
+  background: var(--sunset-coral);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+a.view-fare {
+  text-decoration: none;
+  color: #fff;
+}
+
+a.view-fare::after {
+  content: "";
+  width: 0.72em;
+  height: 0.72em;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 2.2h6.8V9M9.5 2.5 2.2 9.8' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 2.2h6.8V9M9.5 2.5 2.2 9.8' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+a.view-fare:hover,
+span.view-fare {
+  text-decoration: none;
+  color: #fff;
+}
+
+a.view-fare:hover { background: var(--sunset-coral-dark); }
+
+.view-fare:focus-visible {
+  outline: 2px solid var(--navy);
   outline-offset: 2px;
 }
 
